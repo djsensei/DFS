@@ -1,10 +1,11 @@
 '''
 Fantasy Football Data Scraper
 
-Takes data from http://football14.myfantasyleague.com/2013/export
+Pulls JSON data from http://football14.myfantasyleague.com/<year>/export
+Processes it and returns useful CSV files for further analysis.
 
 Dan Morris
-Last Updated 5/1/2014
+Last Updated 5/2/2014
 '''
 import simplejson as json
 from urllib2 import urlopen
@@ -39,7 +40,7 @@ def name_correct(name):
   name[1].strip(' ')
   return name[1] + ' ' + name[0]
 
-def simplify_leagues_info():
+def simplify_leagues_info(): #TODO - make it year-agnostic
   leagues = {}
   with open('leagues_raw_12teams.txt') as rf:
     l = json.loads(rf.read())
@@ -90,7 +91,7 @@ def simplify_adp(adp_json):
   return adp, league_count
 
 def ids_to_players(l, year):
-  # Replaces player id with readable player info in a list of player dicts
+  # Replaces each player_id with readable player info in a list of player dicts
   for row in l:
     id = row['id']
     info = get_player_info(id, year)
@@ -100,10 +101,11 @@ def ids_to_players(l, year):
         row[i] = info[i]
   return l
 ###
-### - CSV Functions
+### - CSV Output Functions
 def list_to_csv(l, fname, header=None):
   # Converts a list of dicts into a csv file
   # If no header string is given, uses keys of first row as headings
+  # Add a header to ensure the keys are in the order you want.
   with open(fname,'w') as wf:
     if header == None:
       header = ''
@@ -123,7 +125,7 @@ def list_to_csv(l, fname, header=None):
   print 'Finished writing ' + fname
   return
 ###
-### - Loading Functions
+### - Loading Functions - Imports useful data from local files
 def load_players_dict():
   # players_dict[year][player_id]
   players_dict = {}
@@ -151,7 +153,7 @@ def get_player_info(player_id, year):
           ' not found in players_dict_'+str(year)+'.'
     return None
 ###
-### - Webscraper Functions - You Have One Job
+### - Small Scraper Functions - You Have One Job!
 def html_to_json(url):
   # Loads url, loads its JSON content, returns the JSON dict
   try:
@@ -207,10 +209,9 @@ def pull_adp(year=2013, franchises=12, ppr=0, mock=0):
   adp_list, league_count = simplify_adp(adp_json)
   return adp_list, league_count
 ###
-### - Big Scraper Functions - One Run Does It All
+### - Big Scraper Functions - One run loads many files
 def process_all_adp():
-  # Scrapes and CSVs a full complement of ADP files
-  # TODO - Load player dicts for each year.
+  # Prepares a full complement of ADP files
   counts = []
   for year in range(first_year, last_year):
     for ppr in [0,1]:
@@ -227,6 +228,7 @@ def process_all_adp():
   return
 
 def process_all_players():
+  # Compiles player information files for every year on record
   for year in range(first_year, last_year):
     pull_players(year)
   return
